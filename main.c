@@ -34,10 +34,12 @@ static char* contents (FILE* file, size_t* bytes)
 	}
 
 	char* content = (char*) calloc(*bytes + 1, 1);
+	CELDA_CHECK_MEM(content);
+
 	fread(content, *bytes, 1, file);
 	content[*bytes] = 0;
-	fclose(file);
 
+	fclose(file);
 	return content;
 }
 

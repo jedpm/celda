@@ -6,11 +6,13 @@ static size_t get_literal (const char*, size_t*, const Token_Type);
 
 void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 {
+	build_build(_rows, _cells);
+
 	for (size_t i = 0; i < _len; i++) {
 		const char a = content[i];
 
-		if (a == '|') continue;
-		if (a == '\n') continue;
+		if (a == '|') { build_cell(); continue; }
+		if (a == '\n') { build_row(); continue; }
 		if (isspace(a)) continue;
 
 		const Token_Type type = resolve_type(a, content[i + 1]);
@@ -21,12 +23,11 @@ void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 
 		if (CELDA_IS_LIT(type)) {
 			size_t prev = i, len = get_literal(content, &i, type);
-			printf("literal: %.*s\n", (int) len, content + prev);
+			build_token(content + prev, len, type);
 		}
 		else {
-			printf("symbol: %.*s\n", 2, content + i);
-			if (type >= type_grequ)
-				i++;
+			if (CELDA_IS_DOUBLE_FORMED(type)) i++;
+			build_token("symbol", 6, type);
 		}
 	}
 
@@ -77,7 +78,6 @@ static void unknown_token_type (const char* context, size_t* _pos)
 static bool get_string (const char x) { return x  !=  '`'; }
 static bool get_number (const char x) { return isdigit(x); }
 static bool get_referc (const char x) { return isalnum(x); }
-
 
 static size_t get_literal (const char* context, size_t* _pos, const Token_Type kind)
 {

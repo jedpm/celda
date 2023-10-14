@@ -1,5 +1,5 @@
 COMPILER = gcc
-OBJECTS = main.o lexer.o
+OBJECTS = main.o lexer.o build.o
 FLAGS = -Wall -Wextra -Wpedantic
 IGNORE = 
 
