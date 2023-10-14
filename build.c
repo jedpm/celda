@@ -9,7 +9,7 @@ static void init_expression (Expr*);
 static void set_cell_to_err (Cell*, uint8_t);
 static bool check_space (Cell*, uint16_t, uint16_t);
 
-void build_build (uint16_t rows, uint16_t cells)
+void build_start (uint16_t rows, uint16_t cells)
 {
 	g_spread.cells = (Cell*) calloc(cells, sizeof(Cell));
 	CELDA_CHECK_MEM(g_spread.cells);
@@ -64,6 +64,7 @@ void build_token (const char* token, size_t len, const Token_Type type)
 	if (CELDA_IS_CNST(type) && !ex->token_i) {
 		snprintf(cc->cell, len + 1, "%.*s", (int) len, token);
 		cc->type = type;
+
 		return;
 	}
 
@@ -84,6 +85,22 @@ void build_token (const char* token, size_t len, const Token_Type type)
 		if (!check_space(cc, ex->child_i, CELDA_SUB_EXP_PER_EXP)) return;
 		init_expression(&ex->children[ex->child_i++]);
 	}
+}
+
+void build_build ()
+{
+	putchar(10);
+	putchar(10);
+
+	for (uint16_t i = 0; i < g_spread.cells_i; i++) {
+		Cell* cc = &g_spread.cells[i];
+		if (cc->first)
+			putchar(10);
+		printf("%s ", cc->cell);
+	}
+
+	putchar(10);
+	putchar(10);
 }
 
 static void init_expression (Expr* self)

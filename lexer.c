@@ -6,7 +6,7 @@ static size_t get_literal (const char*, size_t*, const Token_Type);
 
 void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 {
-	build_build(_rows, _cells);
+	build_start(_rows, _cells);
 
 	for (size_t i = 0; i < _len; i++) {
 		const char a = content[i];
@@ -32,6 +32,7 @@ void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 	}
 
 	free(content);
+	build_build();
 }
 
 static Token_Type resolve_type (const char a, const char b)
