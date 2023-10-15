@@ -34,12 +34,17 @@ bool arith_push (const char* as, const Token_Type is)
 
 void arith_solve ()
 {
-	for (uint16_t i = 0; i < g_expression.expr_i; i++) {
+	uint16_t i;
+	for (i = g_expression.stck_i - 1; i >= STACK_STARTS_AT; i--)
+		push_at_beginning(NULL, g_expression.values[i].asopt);
+
+	char* x = "+-*/%^";
+	for (i = 0; i < g_expression.expr_i; i++) {
 		Val *v = &g_expression.values[i];
 		if (v->asopt == type_number)
 			printf("num: %f\n", v->asnum);
 		else
-			printf("opt: %d\n", v->asopt);
+			printf("opt: %c\n", x[v->asopt - type_add]);
 	}
 }
 
@@ -62,8 +67,8 @@ static bool push_at_stack (const Token_Type is)
 	if (g_expression.stck_i == EXPRESSION_SIZE)
 		return false;
 
-	if (is == type_rigth_p) {
-	}
+	if (is == type_rigth_p)
+		return true;
 
 	Val value = { .asopt = is };
 	if (g_expression.stck_i == STACK_STARTS_AT)
@@ -74,12 +79,11 @@ static bool push_at_stack (const Token_Type is)
 
 	while (exchange(is, top)) {
 		push_at_beginning(NULL, top);
+		g_expression.stck_i = top_i;
 
 		if (top_i == STACK_STARTS_AT) break;
 		top = g_expression.values[--top_i].asopt;
 	}
-
-	g_expression.stck_i = top_i;
 
 	only_push:
 	g_expression.values[g_expression.stck_i++] = value;
@@ -93,9 +97,9 @@ static bool exchange (const Token_Type in, const Token_Type top)
 	static const uint16_t same_mid = type_mul * type_div * type_mod;
 
 	uint16_t this = in * top;
-	bool same = !(this % same_low) || !(this % same_mid);
+
+	bool same = !(same_low % this) || !(same_mid % this);
 	if (same)
 		return true;
-
 	return in < top;
 }

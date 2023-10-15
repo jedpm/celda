@@ -7,11 +7,28 @@ static void info_about (const char*, uint16_t*, uint16_t*);
 int main () {
 	arith_init();
 
+	arith_push("1", type_number);
+	arith_push(NULL, type_mul);
+
+	arith_push("2", type_number);
+	arith_push(NULL, type_div);
+
 	arith_push("3", type_number);
 	arith_push(NULL, type_mul);
+
 	arith_push("4", type_number);
 	arith_push(NULL, type_add);
+
 	arith_push("5", type_number);
+	arith_push(NULL, type_sub);
+
+	arith_push("6", type_number);
+	arith_push(NULL, type_mod);
+
+	arith_push("7", type_number);
+	arith_push(NULL, type_pow);
+
+	arith_push("8", type_number);
 
 	arith_solve();
 	return 0;
