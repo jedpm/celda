@@ -66,14 +66,14 @@ static void unknown_token_type (const char* context, size_t* _pos)
 	size_t pos = *_pos;
 	uint16_t show = 0;
 
-	char c;
-	do {
-		c = context[pos++];
+	char c = context[pos];
+	while (!resolve_type(c, 0) && c >= 32) {
+		c = context[++pos];
 		show++;
-	} while (c >= 32 && !resolve_type(c, 0));
+	}
 
-	CELDA_WARNG("unknown token '%.*s' at the %ld byte", --show, context + *_pos, *_pos);
-	*_pos = pos;
+	CELDA_WARNG("unknown token '%.*s' at the %ld byte", show, context + *_pos, *_pos);
+	*_pos = --pos;
 }
 
 static bool get_string (const char x) { return x  !=  '`'; }

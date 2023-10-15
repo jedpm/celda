@@ -96,7 +96,7 @@ void build_build ()
 		Cell* cc = &g_spread.cells[i];
 		if (cc->first)
 			putchar(10);
-		printf("%s ", cc->cell);
+		printf("(%d) %s\t", i, cc->cell);
 	}
 
 	putchar(10);
