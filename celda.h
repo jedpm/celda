@@ -11,7 +11,7 @@
 #define CELDA_WARNG(s, ...) 		fprintf(stderr, "celda: warng: " s ".\n", ##__VA_ARGS__)
 #define CELDA_CHECK_MEM(p)		do { if (!p) { CELDA_ERROR("no available memory to allocate what is needed"); } } while (0)
 #define CELDA_IS_LIT(k)			(k >= 1 && k <= 3)
-#define CELDA_IS_CNST(k)		(k == 1 || k == 2)
+#define CELDA_IS_CNST(k)		(k == 1 || k == 2 || k == -1)
 #define CELDA_IS_DOUBLE_FORMED(k)	(k >= 18)
 
 #define CELDA_TOKEN_MAX_LEN	64

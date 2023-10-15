@@ -1,10 +1,11 @@
 COMPILER = gcc
-OBJECTS = main.o lexer.o build.o
+OBJECTS = main.o lexer.o build.o arith.o
 FLAGS = -Wall -Wextra -Wpedantic
 IGNORE = 
 
 celda: $(OBJECTS)
 	$(COMPILER) -o celda $(OBJECTS)
+	./celda normal/expressions
 
 %.o: %.c
 	$(COMPILER) -c $(FLAGS) $(IGNORE) $^

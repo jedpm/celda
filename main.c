@@ -1,9 +1,23 @@
 #include "lexer.h"
+#include "arith.h"
 
 static char* contents (FILE*, size_t*);
 static void info_about (const char*, uint16_t*, uint16_t*);
 
-int main (int argc, char** argv)
+int main () {
+	arith_init();
+
+	arith_push("3", type_number);
+	arith_push(NULL, type_mul);
+	arith_push("4", type_number);
+	arith_push(NULL, type_add);
+	arith_push("5", type_number);
+
+	arith_solve();
+	return 0;
+}
+
+int main1 (int argc, char** argv)
 {
 	if (argc != 2)
 		CELDA_ERROR("cannot work with arguments given");

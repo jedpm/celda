@@ -1,6 +1,7 @@
 #include "build.h"
 #define ERROR_EMPTINESS		0
 #define ERROR_BOUDNS_BROKEN	1
+#define ERROR_UNKNOWN_OPERATION	2
 
 static Spread g_spread  = {0};
 static Expr* g_cur_expr = NULL;
@@ -8,6 +9,8 @@ static Expr* g_cur_expr = NULL;
 static void init_expression (Expr*);
 static void set_cell_to_err (Cell*, uint8_t);
 static bool check_space (Cell*, uint16_t, uint16_t);
+static void solve_cell (Cell*);
+static void solve_arithmetic (Cell*, Expr*);
 
 void build_start (uint16_t rows, uint16_t cells)
 {
@@ -94,8 +97,8 @@ void build_build ()
 
 	for (uint16_t i = 0; i < g_spread.cells_i; i++) {
 		Cell* cc = &g_spread.cells[i];
-		if (cc->first)
-			putchar(10);
+		if (cc->first) putchar(10);
+		solve_cell(cc);
 		printf("(%d) %s\t", i, cc->cell);
 	}
 
@@ -119,7 +122,8 @@ static void set_cell_to_err (Cell* cc, uint8_t to)
 {
 	static const char* errors[] = {
 		"!<EMPTY>",
-		"!<BOUDNS>"
+		"!<BOUDNS>",
+		"!<UNKNOWN_OP>"
 	};
 
 	const char* err = errors[to];
@@ -127,11 +131,42 @@ static void set_cell_to_err (Cell* cc, uint8_t to)
 	cc->type = (to == ERROR_EMPTINESS) ? type_unknown : type_error;
 }
 
-static bool check_space (Cell* cc, uint16_t pos, uint16_t lim) {
+static bool check_space (Cell* cc, uint16_t pos, uint16_t lim)
+{
 	if (pos != lim)
 		return true;
 
 	set_cell_to_err(cc, ERROR_BOUDNS_BROKEN);
 	return false;
+}
+
+
+static void solve_cell (Cell* cc)
+{
+	Expr* ex = &cc->expression;
+	if (!ex->token_i)
+		return;
+
+	switch (ex->tokens[0].type) {	
+		case type_arithmetic: {
+			solve_arithmetic(cc, ex);
+			break;
+		}
+		default: {
+			set_cell_to_err(cc, ERROR_UNKNOWN_OPERATION);
+			break;
+		}
+	}
+}
+
+static void solve_arithmetic (Cell* cc, Expr* ex)
+{
+	/*
+	 * Starts from 1 since the first token is the
+	 * '$' token.
+	 * */
+	for (uint16_t i = 1; i < ex->token_i; i++) {	
+		Token* t = &ex->tokens[i];
+	}
 }
 
