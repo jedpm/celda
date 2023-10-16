@@ -17,6 +17,7 @@ static Arith g_expression;
 static bool push_at_beginning (const char*, const Token_Type);
 static bool push_at_stack (const Token_Type);
 static bool exchange (const Token_Type, const Token_Type);
+static void solve (double*, double, const Token_Type);
 
 void arith_init ()
 {
@@ -32,20 +33,33 @@ bool arith_push (const char* as, const Token_Type is)
 	return push_at_stack(is);
 }
 
-void arith_solve ()
+bool arith_solve (char* ans)
 {
 	uint16_t i;
 	for (i = g_expression.stck_i - 1; i >= STACK_STARTS_AT; i--)
 		push_at_beginning(NULL, g_expression.values[i].asopt);
 
-	char* x = "+-*/%^";
+	double numstack[3] = {0};
+	uint16_t nums_i = 0;
+
 	for (i = 0; i < g_expression.expr_i; i++) {
 		Val *v = &g_expression.values[i];
-		if (v->asopt == type_number)
+		if (v->asopt == type_number) {
+			numstack[nums_i++] = v->asnum;
 			printf("num: %f\n", v->asnum);
-		else
-			printf("opt: %c\n", x[v->asopt - type_add]);
+		}
+		else {
+			if (nums_i <= 1)
+				return false;
+			solve(&numstack[nums_i - 2], numstack[nums_i - 1], v->asopt);
+			nums_i--;
+			printf("opt: %d\n", v->asopt);
+		}
 	}
+
+	printf("%.2f %.2f %2.f\n", numstack[0], numstack[1], numstack[2]);
+	snprintf(ans, CELDA_TOKEN_MAX_LEN, "%3.f", numstack[0]);
+	return true;
 }
 
 static bool push_at_beginning (const char* as, const Token_Type is)
@@ -93,13 +107,29 @@ static bool push_at_stack (const Token_Type is)
 static bool exchange (const Token_Type in, const Token_Type top)
 {
 	if (in == type_left_p) return false;
-	static const uint16_t same_low = type_add * type_sub;
-	static const uint16_t same_mid = type_mul * type_div * type_mod;
+	static const uint16_t sames[] = {
+		type_add * type_sub,
+		type_mul * type_div,
+		type_mul * type_mod,
+		type_mod * type_div
+	};
 
-	uint16_t this = in * top;
+	uint16_t a = in * top;
+	bool same = (a == sames[0]) || (a == sames[1]) ||
+		    (a == sames[2]) || (a == sames[3]);
 
-	bool same = !(same_low % this) || !(same_mid % this);
-	if (same)
+	if (same || in == top)
 		return true;
 	return in < top;
 }
+
+static void solve (double *a, double b, const Token_Type op_)
+{
+	switch (op_) {
+		case type_add: *a = *a + b; break;
+		case type_sub: *a = *a - b; break;
+		case type_mul: *a = *a * b; break;
+		case type_div: *a = *a / b; break;
+	}
+}
+

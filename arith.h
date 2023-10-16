@@ -4,6 +4,6 @@
 
 void arith_init ();
 bool arith_push (const char*, const Token_Type);
-void arith_solve ();
+bool arith_solve (char*);
 
 #endif

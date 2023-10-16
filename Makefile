@@ -1,7 +1,7 @@
 COMPILER = gcc
 OBJECTS = main.o lexer.o build.o arith.o
 FLAGS = -Wall -Wextra -Wpedantic
-IGNORE = 
+IGNORE = -Wno-switch
 
 celda: $(OBJECTS)
 	$(COMPILER) -o celda $(OBJECTS)
