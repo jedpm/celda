@@ -1,9 +1,11 @@
 #include "build.h"
 #include "arith.h"
-#define ERROR_EMPTINESS		0
-#define ERROR_BOUNDS_BROKEN	1
-#define ERROR_UNKNOWN_OPERATION	2
-#define ERROR_MALFORMED		3
+#define ERROR_EMPTINESS		0	/* No token saved on the cell. */
+#define ERROR_BOUNDS_BROKEN	1	/* Cell exceed the limits of tokens/sub-expressions. */
+#define ERROR_UNKNOWN_OPERATION	2	/* The first token of the cell doesn't perform any operation. */
+#define ERROR_MALFORMED		3	/* Malformed expression. */
+#define ERROR_OUTTABLE		4	/* Trying to get a cell which hasn't defined. */
+#define ERROR_UNEXPECTED	5	/* An unexpected value was passed to an expression. */
 
 static Spread g_spread  = {0};
 static Expr* g_cur_expr = NULL;
@@ -13,6 +15,7 @@ static void set_cell_to_err (Cell*, uint8_t);
 static bool check_space (Cell*, uint16_t, uint16_t);
 static void solve_cell (Cell*);
 static void solve_arithmetic (Cell*, Expr*);
+static bool value_of (Cell*, Token*, const Token_Type);
 
 void build_start (uint16_t rows, uint16_t cells)
 {
@@ -69,7 +72,6 @@ void build_token (const char* token, size_t len, const Token_Type type)
 	if (CELDA_IS_CNST(type) && !ex->token_i) {
 		snprintf(cc->cell, len + 1, "%.*s", (int) len, token);
 		cc->type = type;
-
 		return;
 	}
 
@@ -126,7 +128,9 @@ static void set_cell_to_err (Cell* cc, uint8_t to)
 		"!<EMPTY>",
 		"!<BOUNDS>",
 		"!<UNKNOWN_OP>",
-		"!<MALFORMED>"
+		"!<MALFORMED>",
+		"!<OUTTABLE>",
+		"!<UNEXPECTED_VALUE>"
 	};
 
 	const char* err = errors[to];
@@ -165,33 +169,63 @@ static void solve_cell (Cell* cc)
 static void solve_arithmetic (Cell* cc, Expr* ex)
 {
 	arith_init();
-	bool success = true;
 
 	for (uint16_t i = 1; i < ex->token_i; i++) {	
 		Token* t = &ex->tokens[i];
-		const Token_Type tp = t->type;
 
-		if (tp == type_number)
-			success = arith_push(t->token, t->type);
-		else if (CELDA_IS_MATH_SYMBOL(tp))
-			success = arith_push(NULL, t->type);
-		else if (tp == type_reference) {
-			puts("no yet");
-			exit(0);
-		}
-		else
+		/**/ if (t->type == type_reference && !value_of(cc, t, type_number))
+			return;
+
+		else if (t->type != type_number && !CELDA_IS_MATH_SYMBOL(t->type))
 			goto malformed;
 
-		if (!success)
+		if (!(arith_push(t->token, t->type)))
 			goto malformed;
 	}
 
 	if (!arith_solve(cc->cell))
 		goto malformed;
+
 	cc->type = type_number;
 	return;
 
 	malformed:
 	set_cell_to_err(cc, ERROR_MALFORMED);
-	return;		
+	return;
 }
+
+static bool value_of (Cell* cc, Token* tk, const Token_Type expected)
+{
+	char* addr = tk->token;
+	const size_t len = strlen(addr);
+
+	char rowas[10];
+	uint16_t col = 0, row = 0;
+
+	for (size_t i = 1; i < len; i++) {
+		const char a = addr[i];
+		if (islower(a) || isupper(a))
+			col += tolower(a) - 'a';
+		if (isdigit(a))
+			rowas[row++] = a - '0' + '0';
+	}
+
+	row = atoi(rowas);
+	if ((row >= g_spread.first_i) || (g_spread.firsts[row] + col >= g_spread.cells_i)) {
+		set_cell_to_err(cc, ERROR_OUTTABLE);
+		return false;
+	}
+
+	uint16_t pos = g_spread.firsts[row] + col;
+	Cell* c = &g_spread.cells[pos];
+
+	if (c->type != expected) {
+		set_cell_to_err(cc, ERROR_UNEXPECTED);
+		return false;
+	}
+
+	snprintf(tk->token, 1 + strlen(c->cell), "%s", c->cell);
+	tk->type = expected;
+	return true;
+}
+

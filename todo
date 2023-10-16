@@ -1,4 +1,5 @@
-ok! Pow and mod in math expressions.
-ok! Parenthesis in math expressions.
+ok! pow and mod in math expressions.
+ok! parenthesis in math expressions.
 
-Solve expressions while lexer's still working (Two process at once).
+reference for math expressions.
+solve sub-expressions for math expressions.

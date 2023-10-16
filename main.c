@@ -7,7 +7,7 @@ static void info_about (const char*, uint16_t*, uint16_t*);
 int main (int argc, char** argv)
 {
 	if (argc != 2)
-		CELDA_ERROR("cannot work with arguments given");
+		CELDA_ERROR("Pass the table to be parsed as unique argument");
 
 	FILE* file = fopen(argv[1], "r");
 	if (!file)
