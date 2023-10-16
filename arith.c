@@ -1,4 +1,5 @@
 #include "arith.h"
+#include <math.h>
 #define EXPRESSION_SIZE		74
 #define STACK_STARTS_AT		64
 
@@ -127,6 +128,8 @@ static void solve (double *a, double b, const Token_Type op_)
 		case type_sub: *a = *a - b; break;
 		case type_mul: *a = *a * b; break;
 		case type_div: *a = *a / b; break;
+		case type_mod: *a = fmod(*a, b); break;
+		case type_pow: *a = pow(*a, b); break;
 	}
 }
 
