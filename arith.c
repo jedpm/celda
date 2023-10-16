@@ -46,18 +46,15 @@ bool arith_solve (char* ans)
 		Val *v = &g_expression.values[i];
 		if (v->asopt == type_number) {
 			numstack[nums_i++] = v->asnum;
-			printf("num: %f\n", v->asnum);
 		}
 		else {
 			if (nums_i <= 1)
 				return false;
 			solve(&numstack[nums_i - 2], numstack[nums_i - 1], v->asopt);
 			nums_i--;
-			printf("opt: %d\n", v->asopt);
 		}
 	}
 
-	printf("%.2f %.2f %2.f\n", numstack[0], numstack[1], numstack[2]);
 	snprintf(ans, CELDA_TOKEN_MAX_LEN, "%3.f", numstack[0]);
 	return true;
 }

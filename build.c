@@ -1,7 +1,9 @@
 #include "build.h"
+#include "arith.h"
 #define ERROR_EMPTINESS		0
 #define ERROR_BOUDNS_BROKEN	1
 #define ERROR_UNKNOWN_OPERATION	2
+#define ERROR_MALFORMED		3
 
 static Spread g_spread  = {0};
 static Expr* g_cur_expr = NULL;
@@ -123,7 +125,8 @@ static void set_cell_to_err (Cell* cc, uint8_t to)
 	static const char* errors[] = {
 		"!<EMPTY>",
 		"!<BOUDNS>",
-		"!<UNKNOWN_OP>"
+		"!<UNKNOWN_OP>",
+		"!<MALFORMED>"
 	};
 
 	const char* err = errors[to];
@@ -161,12 +164,32 @@ static void solve_cell (Cell* cc)
 
 static void solve_arithmetic (Cell* cc, Expr* ex)
 {
-	/*
-	 * Starts from 1 since the first token is the
-	 * '$' token.
-	 * */
+	arith_init();
+	bool success = true;
+
 	for (uint16_t i = 1; i < ex->token_i; i++) {	
 		Token* t = &ex->tokens[i];
-	}
-}
+		const Token_Type tp = t->type;
 
+		if (tp == type_number)
+			success = arith_push(t->token, t->type);
+		else if (CELDA_IS_MATH_SYMBOL(tp))
+			success = arith_push(NULL, t->type);
+		else if (tp == type_reference || tp == type_left_c) {
+			puts("no yet");
+			exit(0);
+		}
+		else {
+			set_cell_to_err(cc, ERROR_MALFORMED);
+			return;		
+		}
+
+		if (!success) {
+		}
+	}
+
+	if (!arith_solve(cc->cell)) {	
+	}
+
+	cc->type = type_number;
+}

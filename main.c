@@ -4,31 +4,7 @@
 static char* contents (FILE*, size_t*);
 static void info_about (const char*, uint16_t*, uint16_t*);
 
-int main () {
-	arith_init();
-
-	arith_push("934", type_number);
-	arith_push(NULL, type_add);
-
-	arith_push("2", type_number);
-	arith_push(NULL, type_mul);
-
-	arith_push("3", type_number);
-	arith_push(NULL, type_mul);
-
-	arith_push("4", type_number);
-	arith_push(NULL, type_div);
-
-	arith_push("3", type_number);
-
-	char a[CELDA_TOKEN_MAX_LEN] = {0};
-	arith_solve(a);
-
-	printf("ans: %s\n", a);
-	return 0;
-}
-
-int main1 (int argc, char** argv)
+int main (int argc, char** argv)
 {
 	if (argc != 2)
 		CELDA_ERROR("cannot work with arguments given");
