@@ -1,7 +1,7 @@
 #include "build.h"
 #include "arith.h"
 #define ERROR_EMPTINESS		0
-#define ERROR_BOUDNS_BROKEN	1
+#define ERROR_BOUNDS_BROKEN	1
 #define ERROR_UNKNOWN_OPERATION	2
 #define ERROR_MALFORMED		3
 
@@ -124,7 +124,7 @@ static void set_cell_to_err (Cell* cc, uint8_t to)
 {
 	static const char* errors[] = {
 		"!<EMPTY>",
-		"!<BOUDNS>",
+		"!<BOUNDS>",
 		"!<UNKNOWN_OP>",
 		"!<MALFORMED>"
 	};
@@ -139,7 +139,7 @@ static bool check_space (Cell* cc, uint16_t pos, uint16_t lim)
 	if (pos != lim)
 		return true;
 
-	set_cell_to_err(cc, ERROR_BOUDNS_BROKEN);
+	set_cell_to_err(cc, ERROR_BOUNDS_BROKEN);
 	return false;
 }
 
@@ -175,22 +175,23 @@ static void solve_arithmetic (Cell* cc, Expr* ex)
 			success = arith_push(t->token, t->type);
 		else if (CELDA_IS_MATH_SYMBOL(tp))
 			success = arith_push(NULL, t->type);
-		else if (tp == type_reference || tp == type_left_c) {
+		else if (tp == type_reference) {
 			puts("no yet");
 			exit(0);
 		}
-		else {
-			set_cell_to_err(cc, ERROR_MALFORMED);
-			return;		
-		}
+		else
+			goto malformed;
 
-		if (!success) {
-			puts("hola");
-		}
+		if (!success)
+			goto malformed;
 	}
 
-	if (!arith_solve(cc->cell)) {	
-	}
-
+	if (!arith_solve(cc->cell))
+		goto malformed;
 	cc->type = type_number;
+	return;
+
+	malformed:
+	set_cell_to_err(cc, ERROR_MALFORMED);
+	return;		
 }

@@ -47,9 +47,8 @@ bool arith_solve (char* ans)
 
 	for (i = 0; i < g_expression.expr_i; i++) {
 		Val *v = &g_expression.values[i];
-		if (v->asopt == type_number) {
+		if (v->asopt == type_number)
 			numstack[nums_i++] = v->asnum;
-		}
 		else {
 			if (nums_i <= 1)
 				return false;
