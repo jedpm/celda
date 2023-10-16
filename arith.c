@@ -11,13 +11,15 @@ typedef struct Value {
 typedef struct Arithmetic {
 	Val values[EXPRESSION_SIZE];
 	uint16_t expr_i, stck_i;
+	uint16_t parentheses;
 } Arith;
 
 static Arith g_expression;
 
 static bool push_at_beginning (const char*, const Token_Type);
 static bool push_at_stack (const Token_Type);
-static bool exchange (const Token_Type, const Token_Type);
+static bool need_2_exchange (const Token_Type, const Token_Type);
+static bool end_of_parentheses ();
 static void solve (double*, double, const Token_Type);
 
 void arith_init ()
@@ -80,7 +82,10 @@ static bool push_at_stack (const Token_Type is)
 		return false;
 
 	if (is == type_rigth_p)
-		return true;
+		return end_of_parentheses();
+
+	if (is == type_left_p)
+		g_expression.parentheses++;
 
 	Val value = { .asopt = is };
 	if (g_expression.stck_i == STACK_STARTS_AT)
@@ -89,7 +94,7 @@ static bool push_at_stack (const Token_Type is)
 	uint16_t top_i = g_expression.stck_i - 1;
 	Token_Type top = g_expression.values[top_i].asopt;
 
-	while (exchange(is, top)) {
+	while (need_2_exchange(is, top)) {
 		push_at_beginning(NULL, top);
 		g_expression.stck_i = top_i;
 
@@ -102,9 +107,11 @@ static bool push_at_stack (const Token_Type is)
 	return true;
 }
 
-static bool exchange (const Token_Type in, const Token_Type top)
+static bool need_2_exchange (const Token_Type in, const Token_Type top)
 {
-	if (in == type_left_p) return false;
+	if (in == type_left_p || top == type_left_p)
+		return false;
+
 	static const uint16_t sames[] = {
 		type_add * type_sub,
 		type_mul * type_div,
@@ -119,6 +126,19 @@ static bool exchange (const Token_Type in, const Token_Type top)
 	if (same || in == top)
 		return true;
 	return in < top;
+}
+
+static bool end_of_parentheses ()
+{
+	if (!g_expression.parentheses)
+		return false;
+
+	uint16_t pos = --g_expression.stck_i;
+	while (g_expression.values[pos].asopt != type_left_p)
+		push_at_beginning(NULL, g_expression.values[pos--].asopt);
+
+	g_expression.stck_i = pos;
+	return true;
 }
 
 static void solve (double *a, double b, const Token_Type op_)

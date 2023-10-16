@@ -185,6 +185,7 @@ static void solve_arithmetic (Cell* cc, Expr* ex)
 		}
 
 		if (!success) {
+			puts("hola");
 		}
 	}
 
