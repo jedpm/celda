@@ -3,11 +3,16 @@
 #define ER_NO_TOKENS    0
 #define ER_NO_PARENT    1
 #define ER_NO_SPACE     2
+#define ER_SYNTAX       3
+#define ER_OUTTA_BOUDNS 4
+#define ER_UNEXPECTED   5
 
 static void init_expression (Expr*, Expr*);
 static void error_occurred (Cell*, uint8_t);
 static bool check_space (Cell*, uint16_t, uint16_t);
-static void findout_its_op (Cell*);
+static void findout_its_op (Spread*, Cell*, char*, const Token_Type);
+static void it_is_for_maths (Spread*, Cell*, char*);
+static bool get_value_from (Spread*, Cell*, Token*, const Token_Type);
 
 Spread* build_start (uint16_t rows, uint16_t cells)
 {
@@ -92,14 +97,14 @@ void build_solve_this (Spread* sp)
 {
     static uint16_t numcell = 0;
     if (!sp->cells_i)
-        return NULL;
+        return;
 
     Cell* cc = &sp->cells[sp->cells_i - 1];
-    if (cc->first)
-        putchar(10);
+    if (cc->first) putchar(10);
 
-    findout_its_op(cc);
-    printf("(%d) %s ", numcell++, cc->cell);
+    if (cc->expression.token_i)
+        findout_its_op(sp, cc, cc->cell, cc->expression.tokens[0].type);
+    printf("(%d, %d) %s ", numcell++, cc->type, cc->cell);
 }
 
 static void init_expression (Expr* ex, Expr* parent)
@@ -117,7 +122,10 @@ static void error_occurred (Cell* cc, uint8_t kind)
 	static const char* errors[] = {
 		"!<IS_EMPTY>",
         "!<NO_PARENT>",
-        "!<NO_SPACE>"
+        "!<NO_SPACE>",
+        "!<ER_SYNTAX>",
+        "!<BOUNDS>",
+        "!<UNEXPECTED>"
 	};
 
 	const char* err = errors[kind];
@@ -133,14 +141,74 @@ static bool check_space (Cell* cc, uint16_t pos, uint16_t lim)
 	return false;
 }
 
-static void findout_its_op (Cell* cc)
+static void findout_its_op (Spread* sp, Cell* cc, char* setin, const Token_Type op)
 {
-    if (CELDA_IS_CNST(cc->type) || !cc->expression.token_i)
+    if (CELDA_IS_CNST(op) || !cc->expression.token_i)
         return;
 
-    switch (cc->expression.tokens[0].type) {
-        case type_arithmetic: puts("math");
+    switch (op) {
+        case type_arithmetic: it_is_for_maths(sp, cc, setin); break;
     }
 }
 
+
+static void it_is_for_maths (Spread* sp, Cell* cc, char* setin)
+{
+    Arith art = arith_init();
+    Expr* ex  = &cc->expression;
+
+    for (uint16_t i = 1; i < ex->token_i; i++) {
+        Token* t = &ex->tokens[i];
+
+        /**/ if (t->type == type_reference && !get_value_from(sp, cc, t, type_number))
+            return;
+        else if (t->type != type_number && !CELDA_IS_MATH_SYMBOL(t->type))
+            goto syntax_err;
+        if (!arith_push(&art, t->token, t->type))
+            goto syntax_err;
+    }
+
+    if (!arith_solve(&art, setin))
+        goto syntax_err;
+
+    cc->type = type_number;
+    return;
+    syntax_err: error_occurred(cc, ER_SYNTAX);
+}
+
+static bool get_value_from (Spread* sp, Cell* cc, Token* t, const Token_Type must_b)
+{
+    const char* addr = t->token;
+    const size_t len = strlen(addr);
+
+    /* there must be a better way but je ne
+     * sais pas como. */
+    char row_[10] = {0};
+
+    uint16_t row = 0, col = 0;
+    for (size_t i = 1; i < len; i++) {
+        const char a = addr[i];
+        if (isdigit(a)) row_[row++] = a - '0' + '0';
+        else col += tolower(a) - 'a';
+    }
+
+    row = atoi(row_);
+    uint16_t pos = sp->firsts[row] + col;
+
+    if ((row >= sp->first_i) || (pos >= sp->cells_i)) {
+        error_occurred(cc, ER_OUTTA_BOUDNS);
+        return false;
+    }
+
+
+    Cell* that;
+    if ((that = &sp->cells[pos])->type != must_b) {
+        error_occurred(cc, ER_UNEXPECTED);
+        return false;
+    }
+
+    snprintf(t->token, strlen(that->cell) + 1, "%s", that->cell);
+    t->type = that->type;
+    return true;
+}
 

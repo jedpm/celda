@@ -1,11 +1,11 @@
 COMPILER = gcc
 OBJECTS = main.o lexer.o build.o arith.o
 FLAGS = -Wall -Wextra -Wpedantic
-IGNORE = -Wno-switch
+IGNORE = -Wno-switch -Wno-unused-parameter
 
 celda: $(OBJECTS)
 	$(COMPILER) -o celda $(OBJECTS) -lm -lpthread
-	./celda normal/types 2> error > output
+	./celda normal/expressions 2> error > output
 	cat output
 
 %.o: %.c

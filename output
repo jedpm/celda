@@ -1,10 +1,11 @@
 
-(0) `This is a string` 
-(1) 12343 
-(2) -847 
-(3) !<IS_EMPTY> 
-(4) !<NO_SPACE> 
-(5) `Testing for unknown ones:` 
-(6) !<IS_EMPTY> 
-(7) !<IS_EMPTY> 
+(0, 1) `Arithmetical ones` 
+(1, 2)  69 
+(2, 2)  12 
+(3, 2)   0 
+(4, 2)   0 
+(5, 2)  16 
+(6, 2)   0 
+(7, 2) -827 
+(8, -1) !<ER_SYNTAX> 
 

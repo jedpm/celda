@@ -1,8 +1,6 @@
 #include "arith.h"
 #include <math.h>
 
-static Arith g_expression;
-
 static bool push_at_beginning (Arith*, const char*, const Token_Type);
 static bool push_at_stack (Arith*, const Token_Type);
 static bool need_2_exchange (const Token_Type, const Token_Type);

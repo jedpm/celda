@@ -8,13 +8,10 @@ void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 {
 	Spread* sp = build_start(_rows, _cells);
 
-
-
 	for (size_t i = 0; i < _len; i++) {
 		const char a = content[i];
 
 		if (a == '|') {
-            pthread_t solver;
             build_solve_this(sp);
             build_init_cell(sp);
             continue;
