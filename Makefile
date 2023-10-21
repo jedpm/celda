@@ -5,10 +5,10 @@ IGNORE = -Wno-switch
 
 celda: $(OBJECTS)
 	$(COMPILER) -o celda $(OBJECTS) -lm
-	./celda normal/expressions
+	./celda normal/types
 
 %.o: %.c
 	$(COMPILER) -c $(FLAGS) $(IGNORE) $^
 
 rm:
-	rm -f $(OBJECTS) celda
+	rm -f $(OBJECTS) celda && clear

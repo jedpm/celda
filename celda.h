@@ -7,11 +7,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define CELDA_ERROR(s) 			do { fprintf(stderr, "celda: abort: %s.\n", s); exit(EXIT_FAILURE); } while (0)
+#define CELDA_ERROR(s) 			    do { fprintf(stderr, "celda: abort: %s.\n", s); exit(EXIT_FAILURE); } while (0)
 #define CELDA_WARNG(s, ...) 		fprintf(stderr, "celda: warng: " s ".\n", ##__VA_ARGS__)
-#define CELDA_CHECK_MEM(p)		do { if (!p) { CELDA_ERROR("no available memory to allocate what is needed"); } } while (0)
-#define CELDA_IS_LIT(k)			(k >= 1 && k <= 3)
-#define CELDA_IS_CNST(k)		(k == 1 || k == 2 || k == -1)
+#define CELDA_CHECK_MEM(p)		    do { if (!p) { CELDA_ERROR("no available memory to allocate what is needed"); } } while (0)
+#define CELDA_IS_LIT(k)			    (k >= 1 && k <= 3)
+#define CELDA_IS_CNST(k)		    (k == 1 || k == 2 || k == -1)
 #define CELDA_IS_DOUBLE_FORMED(k)	(k >= 18)
 #define CELDA_IS_MATH_SYMBOL(k)		(k >= 6 && k <= 13)
 
@@ -62,7 +62,7 @@ typedef struct Expression {
 } Expr;
 
 typedef struct Cell {
-	Expr expression;
+	Expr expression, *cex;
 	char cell[CELDA_TOKEN_MAX_LEN];
 	Token_Type type;
 	bool first;
@@ -72,7 +72,6 @@ typedef struct Spread {
 	Cell* cells;
 	uint16_t* firsts;
 	uint16_t cells_i, first_i;
-	bool is_first;
 } Spread;
 
 #endif

@@ -6,13 +6,17 @@ static size_t get_literal (const char*, size_t*, const Token_Type);
 
 void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 {
-	build_start(_rows, _cells);
+	Spread* sp = build_start(_rows, _cells);
 
-	for (size_t i = 0; i < _len; i++) {
+	for (size_t i = 0; i <= _len; i++) {
 		const char a = content[i];
 
-		if (a == '|') { build_cell(); continue; }
-		if (a == '\n') { build_row(); continue; }
+        if (a == 0) {
+            break;
+        }
+
+		if (a == '|') { build_init_cell(sp); continue; }
+		if (a == '\n') { build_init_row(sp); continue; }
 		if (isspace(a)) continue;
 
 		const Token_Type type = resolve_type(a, content[i + 1]);
@@ -23,16 +27,16 @@ void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 
 		if (CELDA_IS_LIT(type)) {
 			size_t prev = i, len = get_literal(content, &i, type);
-			build_token(content + prev, len, type);
+            build_save_token(sp, content + prev, len, type);
 		}
 		else {
 			if (CELDA_IS_DOUBLE_FORMED(type)) i++;
-			build_token("symbol", 6, type);
+			build_save_token(sp, "symbol", 6, type);
 		}
 	}
 
 	free(content);
-	build_build();
+	//build_build();
 }
 
 static Token_Type resolve_type (const char a, const char b)
