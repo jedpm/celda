@@ -4,8 +4,9 @@ FLAGS = -Wall -Wextra -Wpedantic
 IGNORE = -Wno-switch
 
 celda: $(OBJECTS)
-	$(COMPILER) -o celda $(OBJECTS) -lm
-	./celda normal/types
+	$(COMPILER) -o celda $(OBJECTS) -lm -lpthread
+	./celda normal/types 2> error > output
+	cat output
 
 %.o: %.c
 	$(COMPILER) -c $(FLAGS) $(IGNORE) $^

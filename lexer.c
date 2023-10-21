@@ -8,14 +8,17 @@ void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 {
 	Spread* sp = build_start(_rows, _cells);
 
-	for (size_t i = 0; i <= _len; i++) {
+
+
+	for (size_t i = 0; i < _len; i++) {
 		const char a = content[i];
 
-        if (a == 0) {
-            break;
+		if (a == '|') {
+            pthread_t solver;
+            build_solve_this(sp);
+            build_init_cell(sp);
+            continue;
         }
-
-		if (a == '|') { build_init_cell(sp); continue; }
 		if (a == '\n') { build_init_row(sp); continue; }
 		if (isspace(a)) continue;
 
@@ -36,7 +39,8 @@ void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 	}
 
 	free(content);
-	//build_build();
+    build_solve_this(sp);
+    puts("\n");
 }
 
 static Token_Type resolve_type (const char a, const char b)

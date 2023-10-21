@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #define CELDA_ERROR(s) 			    do { fprintf(stderr, "celda: abort: %s.\n", s); exit(EXIT_FAILURE); } while (0)
 #define CELDA_WARNG(s, ...) 		fprintf(stderr, "celda: warng: " s ".\n", ##__VA_ARGS__)

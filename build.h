@@ -6,12 +6,6 @@ Spread* build_start (uint16_t, uint16_t);
 void build_init_cell (Spread*);
 void build_init_row (Spread*);
 void build_save_token (Spread*, const char*, size_t, const Token_Type);
-
-/*void build_start (uint16_t, uint16_t);
-void build_row ();
-void build_cell ();
-void build_token (const char*, size_t, const Token_Type);
-void build_build ();*/
-
+void build_solve_this (Spread*);
 
 #endif
