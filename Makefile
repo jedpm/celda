@@ -5,8 +5,7 @@ IGNORE = -Wno-switch -Wno-unused-parameter
 
 celda: $(OBJECTS)
 	$(COMPILER) -o celda $(OBJECTS) -lm -lpthread
-	./celda normal/expressions 2> error > output
-	cat output
+	./celda normal/expressions #2> error > output
 
 %.o: %.c
 	$(COMPILER) -c $(FLAGS) $(IGNORE) $^

@@ -43,7 +43,7 @@ bool arith_solve (Arith* self, char* ans)
 		}
 	}
 
-	snprintf(ans, CELDA_TOKEN_MAX_LEN, "%3.f", numstack[0]);
+	snprintf(ans, CELDA_TOKEN_MAX_LEN, "%.2f", numstack[0]);
 	return true;
 }
 
