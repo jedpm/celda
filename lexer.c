@@ -10,6 +10,10 @@ void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
     for (size_t i = 0; i < _len; i++) {
         const char a = content[i];
 
+        /* When a vertical bar is found it means a new cell has begun
+         * what implies that the prevuois cell is gonn be solved and the
+         * new one gott get ready for accept tokens.
+         * */
         if (a == '|') {
             build_solve_this(sp);
             build_init_cell(sp);
@@ -64,6 +68,10 @@ static Token_Type resolve_type (const char a, const char b)
     return isdigit(a) ? type_number : type_unknown;
 }
 
+/* This functions provies a context of what somthing found
+ * on the table looks like, this is called when the current
+ * character does not make sense to the lexer.
+ * */
 static void unknown_token_type (const char* context, size_t* _pos)
 {
     size_t pos = *_pos;
@@ -79,6 +87,7 @@ static void unknown_token_type (const char* context, size_t* _pos)
     *_pos = --pos;
 }
 
+/* Functions to get all literals defined on the table. */
 static bool get_string (const char x) { return x  !=  '`'; }
 static bool get_number (const char x) { return isdigit(x); }
 static bool get_referc (const char x) { return isalnum(x); }

@@ -47,6 +47,7 @@ void build_init_cell (Spread* sp)
 
 void build_init_row (Spread* sp)
 {
+    // XXX: Remove once the .sh file is working
     if (!sp->cells_i)
         return;
     sp->cells[sp->cells_i - 1].first = true;
@@ -63,6 +64,10 @@ void build_save_token (Spread* sp, const char* token, size_t len, const Token_Ty
     }
 
     Cell* cc = &sp->cells[cc_pos]; // XXX: Maybe have a current cell would be a good idea
+    /* If the first token of a cell is a constant value then
+     * the cell is gonna be set to such content and it will
+     * no longer accept any other token.
+     * */
     if (CELDA_IS_CNST(cc->type)) {
         CELDA_WARNG("the %d cell was already set to '%s'", cc_pos, cc->cell);
         return;
@@ -164,8 +169,9 @@ static Token_Type solving_station (Spread* sp, Cell* cc, Expr* ex, char* put_in)
             return type_number;
 
         case type_condition:
-            solve_4_conditionals(sp, cc, ex, put_in);
-            return type_unknown;
+            const Token_Type is = solve_4_conditionals(sp, cc, ex, put_in);
+            cc->type = is;
+            return is;
 
         default:
             error_occurred(cc, ER_NO_EXPRSS);
@@ -186,17 +192,15 @@ static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
         /* Left brace token means there is a sub-expression,
          * then it must be solved first before continue with
          * the current one. */
-        if (t->type == type_left_c) {
-            const Token_Type did = solving_station(sp, cc, &ex->children[csub_ex++], t->token);
-            if (!CELDA_IS_NUMBER(did) || cc->type == type_error)
-                return;
-            t->type = did;
-        }
+        if (t->type == type_left_c)
+            t->type = solving_station(sp, cc, &ex->children[csub_ex++], t->token);
 
         else if (t->type == type_reference && !get_content_of(sp, cc, t, type_number))
             return;
+
         else if (t->type != type_number && !CELDA_IS_MATH_SYMBOL(t->type))
             goto error;
+
         if (!arith_push(&art, t->token, t->type))
             goto error;
     }
@@ -209,7 +213,6 @@ static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
     error: error_occurred(cc, ER_SYNTAX_ERR);
 }
 
-
 static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 {
     /* The minimum of tokens is 6 since a conditional is:
@@ -219,14 +222,24 @@ static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* pu
         error_occurred(cc, ER_SYNTAX_ERR);
         return type_error;
     }
-    uint16_t csub_ex = 0;
 
+    uint16_t csub_ex = 0;
     Token* a = &ex->tokens[1], *b = &ex->tokens[3];
+
     if (a->type == type_left_c)
         a->type = solving_station(sp, cc, &ex->children[csub_ex++], a->token);
+    else if (a->type == type_reference)
+        get_content_of(sp, cc, a, type_unknown);
+
     if (b->type == type_left_c)
         b->type = solving_station(sp, cc, &ex->children[csub_ex++], b->token);
+    else if (b->type == type_reference)
+        get_content_of(sp, cc, b, type_unknown);
 
+    if (cc->type == type_error)
+        return;
+
+    printf("%d %d\n", a->type, b->type);
     if (a->type != b->type) {
         error_occurred(cc, ER_UNEXPECTED);
         return type_error;
@@ -243,28 +256,21 @@ static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* pu
             ans = (its) ? &ex->tokens[4] : &ex->tokens[5];
             break;
         case type_greater:
-            ans = (its > 0) ? &ex->tokens[4] :  &ex->tokens[5];
+            ans = (its > 0) ? &ex->tokens[4] : &ex->tokens[5];
             break;
         case type_grequ:
-            ans = (its > -1) ? &ex->tokens[4] :  &ex->tokens[5];
+            ans = (its > -1) ? &ex->tokens[4] : &ex->tokens[5];
             break;
         case type_less:
-            ans = (its < 0) ? &ex->tokens[4] :  &ex->tokens[5];
+            ans = (its < 0) ? &ex->tokens[4] : &ex->tokens[5];
             break;
         case type_leequ:
-            ans = (its < 1) ? &ex->tokens[4] :  &ex->tokens[5];
-            break;
-        default:
-            // XXX: the error can also be set in here.
+            ans = (its < 1) ? &ex->tokens[4] : &ex->tokens[5];
             break;
     }
 
-    if (!ans)
-        puts("oops");
-
     if (ans->type == type_left_c)
         ans->type = solving_station(sp, cc, &ex->children[csub_ex++], ans->token);
-
     snprintf(put_in, strlen(ans->token) + 1, "%s", ans->token);
     return ans->type;
 }
@@ -285,11 +291,11 @@ static bool get_content_of (Spread* sp, Cell* cc, Token* t, const Token_Type mus
     }
 
     Cell* ths = &sp->cells[pos];
-    if (!check_4_same_type(cc, ths->type, must_b))
+    if (must_b != type_unknown && !check_4_same_type(cc, ths->type, must_b))
         return false;
 
     snprintf(t->token, strlen(ths->cell) + 1, "%s", ths->cell);
-    t->type = must_b;
+    t->type = ths->type;
     return true;
 }
 

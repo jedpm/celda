@@ -19,7 +19,9 @@ bool arith_push (Arith* self, const char* as, const Token_Type is)
 {
     if (is == type_number)
         return push_at_beginning(self, as, is);
-    return push_at_stack(self, is);
+    else if (CELDA_IS_MATH_SYMBOL(is))
+        return push_at_stack(self, is);
+    return false;
 }
 
 bool arith_solve (Arith* self, char* ans)

@@ -5,3 +5,6 @@
 | ?2 >= 2 `Yes` `No`
 | ?1 < 2 `Yes` `No`
 | ?2 <= 2 `Yes` `No`
+| ?{$2 + 2} != {$8 - 4} 4 `Wtf`
+| ?&a0 == &a1 `Same` `No same`
+| ?&a8 == `No same` `ok` `~ok`
