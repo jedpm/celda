@@ -19,11 +19,6 @@ static void solve_4_arith (Spread*, Cell*, Expr*, char*);
 static bool get_content_of (Spread*, Cell*, Token*, const Token_Type);
 static bool check_4_same_type (Cell*, const Token_Type, const Token_Type);
 
-/*static void findout_its_op (Spread*, Cell*, char*, const Token_Type);
-static void it_is_for_maths (Spread*, Cell*, char*);
-static bool get_value_from (Spread*, Cell*, Token*, const Token_Type);
-static bool solve_sub_expr (Spread*, Cell*, Token*, );*/
-
 Spread* build_start (uint16_t rows, uint16_t cells)
 {
     Spread* spread = (Spread*) calloc(1, sizeof(Spread));
@@ -62,44 +57,43 @@ void build_save_token (Spread* sp, const char* token, size_t len, const Token_Ty
     uint16_t cc_pos = sp->cells_i;
 
     if (!cc_pos--) {
-		CELDA_WARNG("tryna save tokens without previous cell");
-		return;
+        CELDA_WARNG("tryna save tokens without previous cell");
+        return;
     }
 
-	Cell* cc = &sp->cells[cc_pos]; // XXX: Maybe have a current cell would be a good idea
-	if (CELDA_IS_CNST(cc->type)) {
-		CELDA_WARNG("the %d cell was already set to '%s'", cc_pos, cc->cell);
-		return;
-	}
-
+    Cell* cc = &sp->cells[cc_pos]; // XXX: Maybe have a current cell would be a good idea
+    if (CELDA_IS_CNST(cc->type)) {
+        CELDA_WARNG("the %d cell was already set to '%s'", cc_pos, cc->cell);
+        return;
+    }
 
     Expr** ex = &cc->cex;
-	if (CELDA_IS_CNST(type) && !cc->expression.token_i) {
-		snprintf(cc->cell, len + 1, "%.*s", (int) len, token);
-		cc->type = type;
-		return;
+    if (CELDA_IS_CNST(type) && !cc->expression.token_i) {
+        snprintf(cc->cell, len + 1, "%.*s", (int) len, token);
+        cc->type = type;
+        return;
 	}
 
-	if (type == type_rigth_c) {
-		if (!(*ex)->parent) error_occurred(cc, ER_NO_PARENT);
-		else *ex = (*ex)->parent;
-		return;
-	}
+    if (type == type_rigth_c) {
+        if (!(*ex)->parent) error_occurred(cc, ER_NO_PARENT);
+        else *ex = (*ex)->parent;
+        return;
+    }
 
-	if (!check_space(cc, (*ex)->token_i, CELDA_TOKEN_PER_EXP))
-		return;
+    if (!check_space(cc, (*ex)->token_i, CELDA_TOKEN_PER_EXP))
+        return;
 
-	Token this = { .type = type };
-	memcpy(this.token, token, len);
-	(*ex)->tokens[(*ex)->token_i++] = this;
+    Token this = { .type = type };
+    memcpy(this.token, token, len);
+    (*ex)->tokens[(*ex)->token_i++] = this;
 
-	if (type == type_left_c) {
-		if (!check_space(cc, (*ex)->child_i, CELDA_SUB_EXP_PER_EXP)) return;
+    if (type == type_left_c) {
+        if (!check_space(cc, (*ex)->child_i, CELDA_SUB_EXP_PER_EXP)) return;
 
         Expr* new = &(*ex)->children[(*ex)->child_i++];
         init_expression(new, *ex);
         *ex = new;
-	}
+    }
 }
 
 void build_solve_this (Spread* sp)
@@ -133,7 +127,7 @@ static void init_expression (Expr* ex, Expr* parent)
 
 static void error_occurred (Cell* cc, uint8_t kind)
 {
-	static const char* errors[] = {
+    static const char* errors[] = {
         "!<NO_PARENT>",
         "!<NOL_SPACE>",
         "!<NO_TOKENS>",
@@ -141,19 +135,19 @@ static void error_occurred (Cell* cc, uint8_t kind)
         "!<NO_IN_TBL>",
         "!<~EXPECTED>",
         "!<SYNTAX_ER>"
-	};
+    };
 
-	const char* err = errors[kind];
-	snprintf(cc->cell, strlen(err) + 1, "%s", err);
-	cc->type = (kind == ER_NO_TOKENS) ? type_unknown : type_error;
+    const char* err = errors[kind];
+    snprintf(cc->cell, strlen(err) + 1, "%s", err);
+    cc->type = (kind == ER_NO_TOKENS) ? type_unknown : type_error;
 }
 
 static bool check_space (Cell* cc, uint16_t pos, uint16_t lim)
 {
-	if (pos != lim)
-		return true;
-	error_occurred(cc, ER_NOL_SPACE);
-	return false;
+    if (pos != lim)
+        return true;
+    error_occurred(cc, ER_NOL_SPACE);
+    return false;
 }
 
 static Token_Type solving_station (Spread* sp, Cell* cc, Expr* ex, char* put_in)
