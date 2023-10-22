@@ -1,2 +1,7 @@
 | `Conditional ones`
 | ?5 == 5 `Yes` `No`
+| ?69 != 69 `Yes` `No`
+| ?1 > 2 `Yes` `No`
+| ?2 >= 2 `Yes` `No`
+| ?1 < 2 `Yes` `No`
+| ?2 <= 2 `Yes` `No`

@@ -16,6 +16,7 @@
 #define CELDA_IS_DOUBLE_FORMED(k)   (k >= 18)
 #define CELDA_IS_MATH_SYMBOL(k)     (k >= 6 && k <= 13)
 #define CELDA_IS_NUMBER(k)          (k == 2 || k == 4)
+#define CELDA_CONDITION_SYMBOL(k)   (k >= 16)
 
 #define CELDA_TOKEN_MAX_LEN     64
 #define CELDA_TOKEN_PER_EXP     16

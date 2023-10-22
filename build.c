@@ -15,7 +15,7 @@ static bool check_space (Cell*, uint16_t, uint16_t);
 
 static Token_Type solving_station (Spread*, Cell*, Expr*, char*);
 static void solve_4_arith (Spread*, Cell*, Expr*, char*);
-static void solve_4_conditionals (Spread*, Cell*, Expr*, char*);
+static Token_Type solve_4_conditionals (Spread*, Cell*, Expr*, char*);
 
 static bool get_content_of (Spread*, Cell*, Token*, const Token_Type);
 static bool check_4_same_type (Cell*, const Token_Type, const Token_Type);
@@ -210,14 +210,14 @@ static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 }
 
 
-static void solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* put_in)
+static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 {
     /* The minimum of tokens is 6 since a conditional is:
      * <?> <value> <condition> <value> <if_it_is> <if_it_aint>
      * */
-    if (ex->token_i < 6) {
+    if (ex->token_i < 6 || !CELDA_CONDITION_SYMBOL(ex->tokens[2].type)) {
         error_occurred(cc, ER_SYNTAX_ERR);
-        return;
+        return type_error;
     }
     uint16_t csub_ex = 0;
 
@@ -229,16 +229,44 @@ static void solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 
     if (a->type != b->type) {
         error_occurred(cc, ER_UNEXPECTED);
-        return;
+        return type_error;
     }
 
-    const Token_Type cond = ex->tokens[2].type;
     int its = memcmp(a->token, b->token, min(strlen(a->token), strlen(b->token)));
 
-    printf("%d\n", its);
+    Token* ans = NULL;
+    switch (ex->tokens[2].type) {
+        case type_equals:
+            ans = (!its) ? &ex->tokens[4] : &ex->tokens[5];
+            break;
+        case type_nequal:
+            ans = (its) ? &ex->tokens[4] : &ex->tokens[5];
+            break;
+        case type_greater:
+            ans = (its > 0) ? &ex->tokens[4] :  &ex->tokens[5];
+            break;
+        case type_grequ:
+            ans = (its > -1) ? &ex->tokens[4] :  &ex->tokens[5];
+            break;
+        case type_less:
+            ans = (its < 0) ? &ex->tokens[4] :  &ex->tokens[5];
+            break;
+        case type_leequ:
+            ans = (its < 1) ? &ex->tokens[4] :  &ex->tokens[5];
+            break;
+        default:
+            // XXX: the error can also be set in here.
+            break;
+    }
 
-    if (cond == type_equals && !its)
-        snprintf(put_in, 5, "%s", ex->tokens[4].token);
+    if (!ans)
+        puts("oops");
+
+    if (ans->type == type_left_c)
+        ans->type = solving_station(sp, cc, &ex->children[csub_ex++], ans->token);
+
+    snprintf(put_in, strlen(ans->token) + 1, "%s", ans->token);
+    return ans->type;
 }
 
 static bool get_content_of (Spread* sp, Cell* cc, Token* t, const Token_Type must_b)
