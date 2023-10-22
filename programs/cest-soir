@@ -1,0 +1,10 @@
+| `Plans for this night`
+| `Time`    | `Doing`             | `Cost (usd)`
+| `20:00`   | `Get ready`         | 0
+| `21:00`   | `Go for her`        | 20
+| `22:00`   | `Cinnema`           | 100
+| `00:30`   | `Eat something`     | 500
+| `1:00`    | `Take her home`     | 40
+| `2:00`    | `Go home`           | 20
+| `Total:`  | $&C2 + &C3 + &C4 + &C5 + &C6 + &C7
+| `Again?`  | ?&B8 <= 1500 `Yes` `No`

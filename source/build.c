@@ -7,14 +7,14 @@
 #define ER_NO_IN_TBL    4
 #define ER_UNEXPECTED   5
 #define ER_SYNTAX_ERR   6
-#define min(a, b) ((a < b) ? a : b)
+#define MIN_OF(a, b) ((a < b) ? a : b)
 
 static void init_expression (Expr*, Expr*);
 static void error_occurred (Cell*, uint8_t);
 static bool check_space (Cell*, uint16_t, uint16_t);
 
 static Token_Type solving_station (Spread*, Cell*, Expr*, char*);
-static void solve_4_arith (Spread*, Cell*, Expr*, char*);
+static Token_Type solve_4_arith (Spread*, Cell*, Expr*, char*);
 static Token_Type solve_4_conditionals (Spread*, Cell*, Expr*, char*);
 
 static bool get_content_of (Spread*, Cell*, Token*, const Token_Type);
@@ -47,9 +47,6 @@ void build_init_cell (Spread* sp)
 
 void build_init_row (Spread* sp)
 {
-    // XXX: Remove once the .sh file is working
-    if (!sp->cells_i)
-        return;
     sp->cells[sp->cells_i - 1].first = true;
     sp->firsts[sp->first_i++] = sp->cells_i;
 }
@@ -63,7 +60,7 @@ void build_save_token (Spread* sp, const char* token, size_t len, const Token_Ty
         return;
     }
 
-    Cell* cc = &sp->cells[cc_pos]; // XXX: Maybe have a current cell would be a good idea
+    Cell* cc = &sp->cells[cc_pos];
     /* If the first token of a cell is a constant value then
      * the cell is gonna be set to such content and it will
      * no longer accept any other token.
@@ -109,16 +106,13 @@ void build_solve_this (Spread* sp)
         return;
 
     Cell* cc = &sp->cells[sp->cells_i - 1];
-    if (CELDA_IS_CNST(cc->type)) goto print;
+    if (!CELDA_IS_CNST(cc->type))
+        cc->type = solving_station(sp, cc, &cc->expression, cc->cell);
 
-    if (cc->expression.token_i)
-        solving_station(sp, cc, &cc->expression, cc->cell);
-    else
-        cc->type = type_error;
+    //printf("(%d, %d) %s ", numcell++, cc->type, cc->cell);
 
-    print:
+    printf("%s |", cc->cell);
     if (cc->first) putchar(10);
-    printf("(%d, %d) %s ", numcell++, cc->type, cc->cell);
 }
 
 static void init_expression (Expr* ex, Expr* parent)
@@ -134,12 +128,9 @@ static void init_expression (Expr* ex, Expr* parent)
 static void error_occurred (Cell* cc, uint8_t kind)
 {
     static const char* errors[] = {
-        "!<NO_PARENT>",
-        "!<NOL_SPACE>",
-        "!<NO_TOKENS>",
-        "!<NO_EXPRES>",
-        "!<NO_IN_TBL>",
-        "!<~EXPECTED>",
+        "!<NO_PARENT>", "!<NOL_SPACE>",
+        "!<NO_TOKENS>", "!<NO_EXPRES>",
+        "!<NO_IN_TBL>", "!<~EXPECTED>",
         "!<SYNTAX_ER>"
     };
 
@@ -165,13 +156,10 @@ static Token_Type solving_station (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 
     switch (ex->tokens[0].type) {
         case type_arithmetic:
-            solve_4_arith(sp, cc, ex, put_in);
-            return type_number;
+            return solve_4_arith(sp, cc, ex, put_in);
 
         case type_condition:
-            const Token_Type is = solve_4_conditionals(sp, cc, ex, put_in);
-            cc->type = is;
-            return is;
+            return solve_4_conditionals(sp, cc, ex, put_in);
 
         default:
             error_occurred(cc, ER_NO_EXPRSS);
@@ -180,8 +168,7 @@ static Token_Type solving_station (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 }
 
 
-// XXX: May be it is a good idea got a pointer to the type to modify it
-static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
+static Token_Type solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 {
     Arith art = arith_init();
     uint16_t csub_ex = 0;
@@ -189,14 +176,11 @@ static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
     for (uint16_t i = 1; i < ex->token_i; i++) {
         Token* t = &ex->tokens[i];
 
-        /* Left brace token means there is a sub-expression,
-         * then it must be solved first before continue with
-         * the current one. */
         if (t->type == type_left_c)
             t->type = solving_station(sp, cc, &ex->children[csub_ex++], t->token);
 
         else if (t->type == type_reference && !get_content_of(sp, cc, t, type_number))
-            return;
+            return type_error;
 
         else if (t->type != type_number && !CELDA_IS_MATH_SYMBOL(t->type))
             goto error;
@@ -208,9 +192,11 @@ static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
     if (!arith_solve(&art, put_in))
         goto error;
 
-    cc->type = type_number;
-    return;
-    error: error_occurred(cc, ER_SYNTAX_ERR);
+    return type_number;
+
+    error:
+    error_occurred(cc, ER_SYNTAX_ERR);
+    return type_error;
 }
 
 static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* put_in)
@@ -237,17 +223,19 @@ static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* pu
         get_content_of(sp, cc, b, type_unknown);
 
     if (cc->type == type_error)
-        return;
+        return type_error;
 
-    printf("%d %d\n", a->type, b->type);
     if (a->type != b->type) {
         error_occurred(cc, ER_UNEXPECTED);
         return type_error;
     }
 
-    int its = memcmp(a->token, b->token, min(strlen(a->token), strlen(b->token)));
-
+    int its = memcmp(a->token, b->token, MIN_OF(strlen(a->token), strlen(b->token)));
     Token* ans = NULL;
+
+    double an = (a->type == type_number) ? atof(a->token) : 0,
+           bn = (b->type == type_number) ? atof(b->token) : 0;
+
     switch (ex->tokens[2].type) {
         case type_equals:
             ans = (!its) ? &ex->tokens[4] : &ex->tokens[5];
@@ -256,16 +244,16 @@ static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* pu
             ans = (its) ? &ex->tokens[4] : &ex->tokens[5];
             break;
         case type_greater:
-            ans = (its > 0) ? &ex->tokens[4] : &ex->tokens[5];
+            ans = (a > b) ? &ex->tokens[4] : &ex->tokens[5];
             break;
         case type_grequ:
-            ans = (its > -1) ? &ex->tokens[4] : &ex->tokens[5];
+            ans = (a >= b) ? &ex->tokens[4] : &ex->tokens[5];
             break;
         case type_less:
-            ans = (its < 0) ? &ex->tokens[4] : &ex->tokens[5];
+            ans = (a < b) ? &ex->tokens[4] : &ex->tokens[5];
             break;
         case type_leequ:
-            ans = (its < 1) ? &ex->tokens[4] : &ex->tokens[5];
+            ans = (a <= b) ? &ex->tokens[4] : &ex->tokens[5];
             break;
     }
 
