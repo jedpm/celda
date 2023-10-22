@@ -44,6 +44,7 @@ static char* contents (FILE* file, size_t* bytes)
     return content;
 }
 
+/* TODO: Use an .sh program instead. */
 static void info_about (const char* content, uint16_t* rows, uint16_t* cells)
 {
     size_t a = 0;

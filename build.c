@@ -7,7 +7,7 @@
 #define ER_NO_IN_TBL    4
 #define ER_UNEXPECTED   5
 #define ER_SYNTAX_ERR   6
-
+#define min(a, b) ((a < b) ? a : b)
 
 static void init_expression (Expr*, Expr*);
 static void error_occurred (Cell*, uint8_t);
@@ -15,6 +15,7 @@ static bool check_space (Cell*, uint16_t, uint16_t);
 
 static Token_Type solving_station (Spread*, Cell*, Expr*, char*);
 static void solve_4_arith (Spread*, Cell*, Expr*, char*);
+static void solve_4_conditionals (Spread*, Cell*, Expr*, char*);
 
 static bool get_content_of (Spread*, Cell*, Token*, const Token_Type);
 static bool check_4_same_type (Cell*, const Token_Type, const Token_Type);
@@ -144,7 +145,7 @@ static void error_occurred (Cell* cc, uint8_t kind)
 
 static bool check_space (Cell* cc, uint16_t pos, uint16_t lim)
 {
-    if (pos != lim)
+    if (pos < lim)
         return true;
     error_occurred(cc, ER_NOL_SPACE);
     return false;
@@ -162,12 +163,18 @@ static Token_Type solving_station (Spread* sp, Cell* cc, Expr* ex, char* put_in)
             solve_4_arith(sp, cc, ex, put_in);
             return type_number;
 
+        case type_condition:
+            solve_4_conditionals(sp, cc, ex, put_in);
+            return type_unknown;
+
         default:
             error_occurred(cc, ER_NO_EXPRSS);
             return type_error;
     }
 }
 
+
+// XXX: May be it is a good idea got a pointer to the type to modify it
 static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 {
     Arith art = arith_init();
@@ -176,6 +183,9 @@ static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
     for (uint16_t i = 1; i < ex->token_i; i++) {
         Token* t = &ex->tokens[i];
 
+        /* Left brace token means there is a sub-expression,
+         * then it must be solved first before continue with
+         * the current one. */
         if (t->type == type_left_c) {
             const Token_Type did = solving_station(sp, cc, &ex->children[csub_ex++], t->token);
             if (!CELDA_IS_NUMBER(did) || cc->type == type_error)
@@ -187,8 +197,6 @@ static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
             return;
         else if (t->type != type_number && !CELDA_IS_MATH_SYMBOL(t->type))
             goto error;
-
-
         if (!arith_push(&art, t->token, t->type))
             goto error;
     }
@@ -199,6 +207,38 @@ static void solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
     cc->type = type_number;
     return;
     error: error_occurred(cc, ER_SYNTAX_ERR);
+}
+
+
+static void solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* put_in)
+{
+    /* The minimum of tokens is 6 since a conditional is:
+     * <?> <value> <condition> <value> <if_it_is> <if_it_aint>
+     * */
+    if (ex->token_i < 6) {
+        error_occurred(cc, ER_SYNTAX_ERR);
+        return;
+    }
+    uint16_t csub_ex = 0;
+
+    Token* a = &ex->tokens[1], *b = &ex->tokens[3];
+    if (a->type == type_left_c)
+        a->type = solving_station(sp, cc, &ex->children[csub_ex++], a->token);
+    if (b->type == type_left_c)
+        b->type = solving_station(sp, cc, &ex->children[csub_ex++], b->token);
+
+    if (a->type != b->type) {
+        error_occurred(cc, ER_UNEXPECTED);
+        return;
+    }
+
+    const Token_Type cond = ex->tokens[2].type;
+    int its = memcmp(a->token, b->token, min(strlen(a->token), strlen(b->token)));
+
+    printf("%d\n", its);
+
+    if (cond == type_equals && !its)
+        snprintf(put_in, 5, "%s", ex->tokens[4].token);
 }
 
 static bool get_content_of (Spread* sp, Cell* cc, Token* t, const Token_Type must_b)
