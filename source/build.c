@@ -7,7 +7,7 @@
 #define ER_NO_IN_TBL    4
 #define ER_UNEXPECTED   5
 #define ER_SYNTAX_ERR   6
-#define MIN_OF(a, b) ((a < b) ? a : b)
+#define MIN_OF(a, b)    ((a < b) ? a : b)
 
 static void init_expression (Expr*, Expr*);
 static void error_occurred (Cell*, uint8_t);
@@ -54,9 +54,8 @@ void build_init_row (Spread* sp)
 void build_save_token (Spread* sp, const char* token, size_t len, const Token_Type type)
 {
     uint16_t cc_pos = sp->cells_i;
-
     if (!cc_pos--) {
-        CELDA_WARNG("tryna save tokens without previous cell");
+        CELDA_WARNG("trying to save tokens with no previous cell");
         return;
     }
 
@@ -167,7 +166,6 @@ static Token_Type solving_station (Spread* sp, Cell* cc, Expr* ex, char* put_in)
     }
 }
 
-
 static Token_Type solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 {
     Arith art = arith_init();
@@ -212,6 +210,7 @@ static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* pu
     uint16_t csub_ex = 0;
     Token* a = &ex->tokens[1], *b = &ex->tokens[3];
 
+    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
     if (a->type == type_left_c)
         a->type = solving_station(sp, cc, &ex->children[csub_ex++], a->token);
     else if (a->type == type_reference)
@@ -221,15 +220,17 @@ static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* pu
         b->type = solving_station(sp, cc, &ex->children[csub_ex++], b->token);
     else if (b->type == type_reference)
         get_content_of(sp, cc, b, type_unknown);
+    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
+    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
     if (cc->type == type_error)
         return type_error;
-
-    if (a->type != b->type) {
-        error_occurred(cc, ER_UNEXPECTED);
+    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+    
+    if (!check_4_same_type(cc, a->type, b->type))
         return type_error;
-    }
 
+    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
     int its = memcmp(a->token, b->token, MIN_OF(strlen(a->token), strlen(b->token)));
     Token* ans = NULL;
 
@@ -256,10 +257,13 @@ static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* pu
             ans = (a <= b) ? &ex->tokens[4] : &ex->tokens[5];
             break;
     }
+    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
+    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
     if (ans->type == type_left_c)
         ans->type = solving_station(sp, cc, &ex->children[csub_ex++], ans->token);
     snprintf(put_in, strlen(ans->token) + 1, "%s", ans->token);
+    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
     return ans->type;
 }
 

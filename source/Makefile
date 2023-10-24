@@ -1,5 +1,5 @@
 COMPILER = gcc
-OBJECTS = main.o lexer.o build.o arith.o
+OBJECTS = celda.o lexer.o build.o arith.o
 FLAGS = -Wall -Wextra -Wpedantic
 IGNORE = -Wno-switch -Wno-unused-parameter
 
