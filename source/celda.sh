@@ -5,7 +5,7 @@ if [ $# -eq 0 ]; then
     exit 0
 fi
 
-if [ ! -e $1 ];
+if [ ! -e $1 ]; then
     echo "celda: error: file passed does not exist: $1"
     exit 1
 fi

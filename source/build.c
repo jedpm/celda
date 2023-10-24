@@ -1,12 +1,10 @@
 #include "build.h"
 #include "arith.h"
-#define ER_NO_PARENT    0
-#define ER_NOL_SPACE    1
-#define ER_NO_TOKENS    2
-#define ER_NO_EXPRSS    3
-#define ER_NO_IN_TBL    4
-#define ER_UNEXPECTED   5
-#define ER_SYNTAX_ERR   6
+#define ER_NO_PARENT    0   /* Using { with no previous }................................ */
+#define ER_NOL_SPACE    1   /* There is no longer space to save tokens/sub-expressions... */
+#define ER_NO_EXPRSS    2   /* Empty expression or unknown operation to be solved........ */
+#define ER_NO_IN_TBL    3   /* Reference outta bounds.................................... */
+#define ER_SYNTAX_ERR   4   /* Unexpected value while solving expression................. */
 #define MIN_OF(a, b)    ((a < b) ? a : b)
 
 static void init_expression (Expr*, Expr*);
@@ -14,10 +12,10 @@ static void error_occurred (Cell*, uint8_t);
 static bool check_space (Cell*, uint16_t, uint16_t);
 
 static Token_Type solving_station (Spread*, Cell*, Expr*, char*);
+
 static Token_Type solve_4_arith (Spread*, Cell*, Expr*, char*);
 static Token_Type solve_4_conditionals (Spread*, Cell*, Expr*, char*);
-
-static bool get_content_of (Spread*, Cell*, Token*, const Token_Type);
+static Token_Type get_content_of (Spread*, Cell*, Token*);
 static bool check_4_same_type (Cell*, const Token_Type, const Token_Type);
 
 Spread* build_start (uint16_t rows, uint16_t cells)
@@ -40,6 +38,7 @@ Spread* build_start (uint16_t rows, uint16_t cells)
 void build_init_cell (Spread* sp)
 {
     Cell* cc = &sp->cells[sp->cells_i++];
+
     init_expression(&cc->expression, NULL);
     cc->type = type_unknown;
     cc->cex  = &cc->expression;
@@ -127,15 +126,16 @@ static void init_expression (Expr* ex, Expr* parent)
 static void error_occurred (Cell* cc, uint8_t kind)
 {
     static const char* errors[] = {
-        "!<NO_PARENT>", "!<NOL_SPACE>",
-        "!<NO_TOKENS>", "!<NO_EXPRES>",
-        "!<NO_IN_TBL>", "!<~EXPECTED>",
+        "!<NO_PARENT>",
+        "!<NOL_SPACE>",
+        "!<NO_EXPRES>",
+        "!<NO_IN_TBL>",
         "!<SYNTAX_ER>"
     };
 
     const char* err = errors[kind];
     snprintf(cc->cell, strlen(err) + 1, "%s", err);
-    cc->type = (kind == ER_NO_TOKENS) ? type_unknown : type_error;
+    cc->type = type_error;
 }
 
 static bool check_space (Cell* cc, uint16_t pos, uint16_t lim)
@@ -146,12 +146,26 @@ static bool check_space (Cell* cc, uint16_t pos, uint16_t lim)
     return false;
 }
 
+void solve_token (Spread* sp, Cell* cc, Expr* ex, Token* t)
+{
+    if (CELDA_IS_CNST(t->type))
+        return;
+
+    if (t->type == type_reference)
+        t->type = get_content_of(sp, cc, t);
+    else
+        t->type = solving_station(sp, cc, &ex->children[ex->child_i++], t->token);
+}
+
 static Token_Type solving_station (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 {
-    if (!ex->token_i) {
-        error_occurred(cc, ER_NO_TOKENS);
-        return type_error;
-    }
+    if (!ex->token_i)
+        goto no_expression;
+
+    /* Is set to zero once again to know what is the next
+     * children expressions to be solved when needed instead
+     * of making another index. */
+    ex->child_i = 0;
 
     switch (ex->tokens[0].type) {
         case type_arithmetic:
@@ -159,143 +173,81 @@ static Token_Type solving_station (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 
         case type_condition:
             return solve_4_conditionals(sp, cc, ex, put_in);
-
-        default:
-            error_occurred(cc, ER_NO_EXPRSS);
-            return type_error;
     }
+
+    no_expression:
+    error_occurred(cc, ER_NO_EXPRSS);
+    return type_error;
 }
 
 static Token_Type solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 {
-    Arith art = arith_init();
-    uint16_t csub_ex = 0;
-
+    Arith a = arith_init();
     for (uint16_t i = 1; i < ex->token_i; i++) {
         Token* t = &ex->tokens[i];
 
-        if (t->type == type_left_c)
-            t->type = solving_station(sp, cc, &ex->children[csub_ex++], t->token);
-
-        else if (t->type == type_reference && !get_content_of(sp, cc, t, type_number))
+        if (!CELDA_IS_MATH_SYMBOL(t->type))
+            solve_token(sp, cc, ex, t);
+        if (!t->type)
             return type_error;
 
-        else if (t->type != type_number && !CELDA_IS_MATH_SYMBOL(t->type))
-            goto error;
-
-        if (!arith_push(&art, t->token, t->type))
-            goto error;
+        if (!arith_push(&a, t->token, t->type))
+            goto syntax_err;
     }
 
-    if (!arith_solve(&art, put_in))
-        goto error;
+    if (!arith_solve(&a, put_in))
+        goto syntax_err;
 
     return type_number;
 
-    error:
+    syntax_err:
     error_occurred(cc, ER_SYNTAX_ERR);
     return type_error;
 }
 
 static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 {
-    /* The minimum of tokens is 6 since a conditional is:
-     * <?> <value> <condition> <value> <if_it_is> <if_it_aint>
-     * */
-    if (ex->token_i < 6 || !CELDA_CONDITION_SYMBOL(ex->tokens[2].type)) {
+    if (ex->token_i < 6) {
         error_occurred(cc, ER_SYNTAX_ERR);
         return type_error;
     }
 
-    uint16_t csub_ex = 0;
+    // ? a x b c d
+    // 0 1 2 3 4 5
     Token* a = &ex->tokens[1], *b = &ex->tokens[3];
+    solve_token(sp, cc, ex, a);
+    solve_token(sp, cc, ex, b);
 
-    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    if (a->type == type_left_c)
-        a->type = solving_station(sp, cc, &ex->children[csub_ex++], a->token);
-    else if (a->type == type_reference)
-        get_content_of(sp, cc, a, type_unknown);
-
-    if (b->type == type_left_c)
-        b->type = solving_station(sp, cc, &ex->children[csub_ex++], b->token);
-    else if (b->type == type_reference)
-        get_content_of(sp, cc, b, type_unknown);
-    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-
-    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    if (cc->type == type_error)
-        return type_error;
-    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    
-    if (!check_4_same_type(cc, a->type, b->type))
+    if (!a->type || !b->type)
         return type_error;
 
-    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    int its = memcmp(a->token, b->token, MIN_OF(strlen(a->token), strlen(b->token)));
-    Token* ans = NULL;
-
-    double an = (a->type == type_number) ? atof(a->token) : 0,
-           bn = (b->type == type_number) ? atof(b->token) : 0;
-
-    switch (ex->tokens[2].type) {
-        case type_equals:
-            ans = (!its) ? &ex->tokens[4] : &ex->tokens[5];
-            break;
-        case type_nequal:
-            ans = (its) ? &ex->tokens[4] : &ex->tokens[5];
-            break;
-        case type_greater:
-            ans = (a > b) ? &ex->tokens[4] : &ex->tokens[5];
-            break;
-        case type_grequ:
-            ans = (a >= b) ? &ex->tokens[4] : &ex->tokens[5];
-            break;
-        case type_less:
-            ans = (a < b) ? &ex->tokens[4] : &ex->tokens[5];
-            break;
-        case type_leequ:
-            ans = (a <= b) ? &ex->tokens[4] : &ex->tokens[5];
-            break;
+    if (a->type != b->type) {
+        error_occurred(cc, ER_SYNTAX_ERR);
+        return type_error;
     }
-    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
-    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    if (ans->type == type_left_c)
-        ans->type = solving_station(sp, cc, &ex->children[csub_ex++], ans->token);
-    snprintf(put_in, strlen(ans->token) + 1, "%s", ans->token);
-    // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    return ans->type;
+    snprintf(put_in, 7, "%s", "number");
 }
 
-static bool get_content_of (Spread* sp, Cell* cc, Token* t, const Token_Type must_b)
+static Token_Type get_content_of (Spread* sp, Cell* cc, Token* t)
 {
-    const char* addr = t->token;
-    const size_t nch = strcspn(addr + 1, "1234567890");
+    const char *on = t->token;
+    const size_t nch = strcspn(on + 1, "1234567890");
 
-    uint16_t row = atoi(addr + 1 + nch), col = 0;
+    uint16_t row = atoi(on + 1 + nch), col = 0, pos;
     for (uint16_t i = 1; i <= nch; i++)
-        col += tolower(addr[i]) - 'a';
+        col += tolower(on[i]) - 'a';
 
-    uint16_t pos = sp->firsts[row] + col;
+    pos = sp->firsts[row] + col;
     if ((row >= sp->first_i) || (pos >= sp->cells_i)) {
         error_occurred(cc, ER_NO_IN_TBL);
-        return false;
+        return type_error;
     }
 
-    Cell* ths = &sp->cells[pos];
-    if (must_b != type_unknown && !check_4_same_type(cc, ths->type, must_b))
-        return false;
+    Cell* such = &sp->cells[pos];
+    snprintf(t->token, strlen(such->cell) + 1, "%s", such->cell);
 
-    snprintf(t->token, strlen(ths->cell) + 1, "%s", ths->cell);
-    t->type = ths->type;
-    return true;
-}
-
-static bool check_4_same_type (Cell* cc, const Token_Type a, const Token_Type b)
-{
-    if (a == b)
-        return true;
-    error_occurred(cc, ER_UNEXPECTED);
-    return false;
+    t->type = such->type;
+    return t->type;
 }
 
