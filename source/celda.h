@@ -16,7 +16,7 @@
 #define CELDA_IS_DOUBLE_FORMED(k)   (k >= 18)
 #define CELDA_IS_MATH_SYMBOL(k)     (k >= 6 && k <= 13)
 #define CELDA_IS_NUMBER(k)          (k == 2 || k == 4)
-#define CELDA_CONDITION_SYMBOL(k)   (k >= 16)
+#define CELDA_CONDITION_SYMBOL(k)   (k >= 16 && k <= 21)
 
 #define CELDA_TOKEN_MAX_LEN     64
 #define CELDA_TOKEN_PER_EXP     16
@@ -25,27 +25,22 @@
 typedef enum Token_Type {
     type_error = -1,
     type_unknown,
-
-    type_string, // 1
+    type_string,
     type_number,
     type_reference,
-
-    type_arithmetic, // 4
+    type_arithmetic,
     type_condition,
-
-    type_add, // 6
+    type_add,
     type_sub,
     type_mul,
     type_div,
     type_mod,
     type_pow,
-
-    type_left_p, // 12
+    type_left_p,
     type_rigth_p,
     type_left_c,
     type_rigth_c,
-
-    type_greater, // 16
+    type_greater,
     type_less,
     type_grequ,
     type_leequ,

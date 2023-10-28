@@ -45,7 +45,7 @@ bool arith_solve (Arith* self, char* ans)
         }
     }
 
-    snprintf(ans, CELDA_TOKEN_MAX_LEN, "%.2f", numstack[0]);
+    snprintf(ans, CELDA_TOKEN_MAX_LEN, "%f", numstack[0]);
     return true;
 }
 
@@ -55,7 +55,7 @@ static bool push_at_beginning (Arith* self, const char* as, const Token_Type is)
         return false;
 
     Val value = {	
-        .asnum = (as) ? atol(as) : 0,
+        .asnum = (as) ? atof(as) : 0,
         .asopt = is
     };
 

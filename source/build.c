@@ -87,6 +87,7 @@ void build_save_token (Spread* sp, const char* token, size_t len, const Token_Ty
     memcpy(this.token, token, len);
     (*ex)->tokens[(*ex)->token_i++] = this;
 
+
     if (type == type_left_c) {
         if (!check_space(cc, (*ex)->child_i, CELDA_SUB_EXP_PER_EXP)) return;
 

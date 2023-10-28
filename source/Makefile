@@ -4,7 +4,7 @@ FLAGS = -Wall -Wextra -Wpedantic
 IGNORE = -Wno-switch
 
 celda: $(OBJECTS)
-	$(COMPILER) -o celda $(OBJECTS) -lm -lpthread
+	$(COMPILER) -o celda $(OBJECTS) -lm
 
 %.o: %.c
 	$(COMPILER) -c $(FLAGS) $(IGNORE) $^

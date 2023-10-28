@@ -1,7 +1,7 @@
 #include "lexer.h"
 
 static Token_Type resolve_type (const char, const char);
-static void unknown_token_type (const char*, size_t*);
+static void unknown_token_type (const char*, size_t*, size_t);
 static size_t get_literal (const char*, size_t*, const Token_Type);
 
 void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
@@ -24,7 +24,7 @@ void lexer_lexer (char* content, size_t _len, uint16_t _rows, uint16_t _cells)
 
         const Token_Type type = resolve_type(a, content[i + 1]);
         if (type == type_unknown) {	
-            unknown_token_type(content, &i);
+            unknown_token_type(content, &i, _len);
             continue;
         }
 
@@ -72,13 +72,13 @@ static Token_Type resolve_type (const char a, const char b)
  * on the table looks like, this is called when the current
  * character does not make sense to the lexer.
  * */
-static void unknown_token_type (const char* context, size_t* _pos)
+static void unknown_token_type (const char* context, size_t* _pos, size_t max)
 {
     size_t pos = *_pos;
     uint16_t show = 0;
 
     char c = context[pos];
-    while (!resolve_type(c, 0) && c >= 32) {
+    while (!resolve_type(c, (pos + 1) < max ? context[pos + 1] : 0) && c >= 32 && pos < max) {
         c = context[++pos];
         show++;
     }
@@ -89,7 +89,7 @@ static void unknown_token_type (const char* context, size_t* _pos)
 
 /* Functions to get all literals defined on the table. */
 static bool get_string (const char x) { return x  !=  '`'; }
-static bool get_number (const char x) { return isdigit(x); }
+static bool get_number (const char x) { return isdigit(x) || x == '.'; }
 static bool get_referc (const char x) { return isalnum(x); }
 
 static size_t get_literal (const char* context, size_t* _pos, const Token_Type kind)
