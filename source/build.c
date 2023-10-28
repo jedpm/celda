@@ -12,11 +12,10 @@ static void error_occurred (Cell*, uint8_t);
 static bool check_space (Cell*, uint16_t, uint16_t);
 
 static Token_Type solving_station (Spread*, Cell*, Expr*, char*);
-
+static void solve_token (Spread*, Cell*, Expr*, Token*);
 static Token_Type solve_4_arith (Spread*, Cell*, Expr*, char*);
 static Token_Type solve_4_conditionals (Spread*, Cell*, Expr*, char*);
 static Token_Type get_content_of (Spread*, Cell*, Token*);
-static bool check_4_same_type (Cell*, const Token_Type, const Token_Type);
 
 Spread* build_start (uint16_t rows, uint16_t cells)
 {
@@ -146,7 +145,7 @@ static bool check_space (Cell* cc, uint16_t pos, uint16_t lim)
     return false;
 }
 
-void solve_token (Spread* sp, Cell* cc, Expr* ex, Token* t)
+static void solve_token (Spread* sp, Cell* cc, Expr* ex, Token* t)
 {
     if (CELDA_IS_CNST(t->type))
         return;
@@ -207,13 +206,11 @@ static Token_Type solve_4_arith (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 
 static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* put_in)
 {
-    if (ex->token_i < 6) {
+    if (ex->token_i < 6 || !CELDA_CONDITION_SYMBOL(ex->tokens[2].type)) {
         error_occurred(cc, ER_SYNTAX_ERR);
         return type_error;
     }
 
-    // ? a x b c d
-    // 0 1 2 3 4 5
     Token* a = &ex->tokens[1], *b = &ex->tokens[3];
     solve_token(sp, cc, ex, a);
     solve_token(sp, cc, ex, b);
@@ -226,7 +223,42 @@ static Token_Type solve_4_conditionals (Spread* sp, Cell* cc, Expr* ex, char* pu
         return type_error;
     }
 
-    snprintf(put_in, 7, "%s", "number");
+    double a_asnum, b_asnum;
+    Token* final = NULL;
+    int32_t scmp = memcmp(a->token, b->token, MIN_OF(strlen(a->token), strlen(b->token)));
+
+    if (a->type == type_number) {
+        a_asnum = atol(a->token);
+        b_asnum = atol(b->token);
+    }
+
+    switch (ex->tokens[2].type) {
+        case type_equals:
+            final = !(scmp) ? &ex->tokens[4] : &ex->tokens[5];
+            break;
+        case type_nequal:
+            final = (scmp)  ? &ex->tokens[4] : &ex->tokens[5];
+            break;
+        case type_greater:
+            final = (a_asnum > b_asnum)  ? &ex->tokens[4] : &ex->tokens[5];
+            break;
+        case type_grequ:
+            final = (a_asnum >= b_asnum) ? &ex->tokens[4] : &ex->tokens[5];
+            break;
+        case type_less:
+            final = (a_asnum < b_asnum)  ? &ex->tokens[4] : &ex->tokens[5];
+            break;
+        case type_leequ:
+            final = (a_asnum <= b_asnum) ? &ex->tokens[4] : &ex->tokens[5];
+            break;
+    }
+    
+    solve_token(sp, cc, ex, final);
+    if (!final->type)
+        return type_error;
+
+    snprintf(put_in, strlen(final->token) + 1, "%s", final->token);
+    return final->type;
 }
 
 static Token_Type get_content_of (Spread* sp, Cell* cc, Token* t)
