@@ -1,0 +1,22 @@
+    
+    celda.
+
+    This is an idea by taken by a tsoding session where the main idea is try to implement an spredsheet
+    in terminal, the program gotta have the basic functions of a real one like arithmetic operations and
+    conditionals (i guess?); in this case it got both however it does not support stats functions and it
+    just accepts integer numbers defintion (rational numbers can be obtained by arith ops [but it isnt the idea]).
+
+    The syntax is pretty simple, every cell is defined by '|' and all the tokens found will be saved into
+    such cell until a new '|' is found, every cell got expressions and such expressions also can have
+    sub expressions, so a cell can look like
+    | $3 + 1 - {$4 - {?2 == 2 1 8}}
+
+    and it will be solved as
+    | 3 + 1 - 4 - 1 -> | -1
+
+    so to make sub-expressions put { and the type of expression to be solved $ for maths and ?
+    for conditionals, the examples are in the 'syntaxis' folder and some tiny programs are in the
+    'programs' folder.
+
+
+jedpm.

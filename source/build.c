@@ -1,6 +1,6 @@
 #include "build.h"
 #include "arith.h"
-#define ER_NO_PARENT    0   /* Using { with no previous }................................ */
+#define ER_NO_PARENT    0   /* Using } with no previous {................................ */
 #define ER_NOL_SPACE    1   /* There is no longer space to save tokens/sub-expressions... */
 #define ER_NO_EXPRSS    2   /* Empty expression or unknown operation to be solved........ */
 #define ER_NO_IN_TBL    3   /* Reference outta bounds.................................... */
@@ -98,7 +98,6 @@ void build_save_token (Spread* sp, const char* token, size_t len, const Token_Ty
 
 void build_solve_this (Spread* sp)
 {
-    static uint16_t numcell = 0;
     if (!sp->cells_i)
         return;
 
@@ -106,9 +105,7 @@ void build_solve_this (Spread* sp)
     if (!CELDA_IS_CNST(cc->type))
         cc->type = solving_station(sp, cc, &cc->expression, cc->cell);
 
-    printf("(%d, %d) %s |", numcell++, cc->type, cc->cell);
-
-    //printf("%s |", cc->cell);
+    printf("%s |", cc->cell);
     if (cc->first) putchar(10);
 }
 
