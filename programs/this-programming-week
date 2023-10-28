@@ -1,0 +1,10 @@
+| `Programming week schedule (This week)`
+| `Day`      | `Programming?`
+| `Monday`   | 1
+| `Tuesday`  | 0
+| `Wednsday` | 0
+| `Thrusday` | 0
+| `Friday`   | 1
+| `Saturday` | 1
+| `Sunday`   | 1
+| `Streak?`  | ?{$&b2 + &b3 + &b4 + &b5 + &b6 + &b7 + &b8} > 5 `Hell yeah` `Noup`

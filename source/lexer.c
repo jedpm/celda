@@ -83,7 +83,7 @@ static void unknown_token_type (const char* context, size_t* _pos)
         show++;
     }
 
-    CELDA_WARNG("unknown token '%.*s' at the %ld byte", show, context + *_pos, *_pos);
+    CELDA_WARNG("unknown token <%.*s> at the %ld byte", show, context + *_pos, *_pos);
     *_pos = --pos;
 }
 

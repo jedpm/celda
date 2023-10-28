@@ -106,9 +106,9 @@ void build_solve_this (Spread* sp)
     if (!CELDA_IS_CNST(cc->type))
         cc->type = solving_station(sp, cc, &cc->expression, cc->cell);
 
-    //printf("(%d, %d) %s ", numcell++, cc->type, cc->cell);
+    printf("(%d, %d) %s |", numcell++, cc->type, cc->cell);
 
-    printf("%s |", cc->cell);
+    //printf("%s |", cc->cell);
     if (cc->first) putchar(10);
 }
 
