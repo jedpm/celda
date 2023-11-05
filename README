@@ -19,10 +19,4 @@
     for conditionals, the examples are in the 'syntaxis' folder and some tiny programs are in the
     'programs' folder.
 
-    issues.
-    --**--
-
-    Do not know why it gets crazy when the content got more than 5000 lines, i mean it is able to perform all
-    the ops but then breaks itself saying it does not know about token '' and its code is -32, like wtf?
-
 jedpm.
